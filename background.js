@@ -4,14 +4,14 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 		const urlParameters = new URLSearchParams(queryParameters);
 		
 		if (urlParameters.get("list") != null) {
-			chrome.runtime.sendMessage(
-				chrome.runtime.id,
+			chrome.tabs.sendMessage(
+				tabId,
 				{
-					type: "NEW",
+					type: tab.url.includes("youtube.com/playlist") ? "PLAYLIST" : "VIDEO",
 					playlistId: urlParameters.get("list")
-				}
+				},
+				function(response) {console.log(response);}
 			);
-			console.log(1);
 		}
 	}
 });
