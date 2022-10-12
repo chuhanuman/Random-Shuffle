@@ -61,7 +61,7 @@ const savePlaylistEventHandler = async () => {
 };
 
 const onPlaylistLoad = async () => {
-	const saveButtonExists = document.getElementsByClassName("save-btn")[0];
+	var saveButtonExists = document.getElementsByClassName("save-btn")[0];
 	
 	if (!saveButtonExists) {
 		const saveButton = document.createElement("img");
@@ -77,8 +77,11 @@ const onPlaylistLoad = async () => {
 			if (youtubePlaylistControls) {
 				console.log("Found playlist controls.")
 				clearInterval(readyStateCheckInterval);
-				youtubePlaylistControls.appendChild(saveButton);
-				saveButton.addEventListener("click", savePlaylistEventHandler);
+				saveButtonExists = document.getElementsByClassName("save-btn")[0];
+				if (!saveButtonExists) {
+					youtubePlaylistControls.appendChild(saveButton);
+					saveButton.addEventListener("click", savePlaylistEventHandler);
+				}
 			}
 		}, 1000);
 	}
