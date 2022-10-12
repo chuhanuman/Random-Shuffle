@@ -1,5 +1,6 @@
 import { getActiveTabURL } from "./utils.js";
 
+//TODO: view playlist
 const addNewPlaylist = (playlists, playlist) => {
 	console.log("HERE");
 	console.log(playlist);

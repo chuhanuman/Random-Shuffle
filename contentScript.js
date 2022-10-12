@@ -1,9 +1,10 @@
 let youtubePlaylistControls, youtubePlayer;
+let curPlaylist;
 let curPlaylistId = "";
-let curPlaylistVideos = {};
+let curPlaylistVideos;
 let curPageType = "";
 
-const fetchPlaylists = () => {
+const fetchPlaylist = () => {
 	return new Promise((resolve) => {
 		chrome.storage.sync.get([curPlaylistId], (obj) => {
 			resolve(obj[curPlaylistId] ? JSON.parse(obj[curPlaylistId]) : []);
@@ -11,12 +12,38 @@ const fetchPlaylists = () => {
 	});
 };
 
-const startShuffle = async () => {
-	curPlaylistVideos = await fetchPlaylists().videos;
+const fetchVideos = async () => {
+	curPlaylist = await fetchPlaylist();
+	curPlaylistVideos = curPlaylist.videos;
+	console.log("1");
+	return new Promise((resolve) => {});
+}
+
+const playNext = async () => {
+	console.log("0 or 1.5");
+	if (curPlaylistVideos == null) {
+		await fetchVideos();
+	}
+	console.log("2");
+	window.location.href = "https://youtube.com/watch?v=" + curPlaylistVideos[Math.floor(Math.random()*curPlaylistVideos.length)] + "#shuffle=" + curPlaylistId;
 }
 
 const savePlaylistEventHandler = async () => {
-	curPlaylistVideos = {};
+	curPlaylistVideos = [];
+	
+	var lastNumVideos = 0, curNumVideos = 0;
+	do {
+		lastNumVideos = curNumVideos;
+		curNumVideos = await new Promise (response => {
+			window.scrollTo(0,(window.pageYOffset+12000));
+			response(document.querySelectorAll(".style-scope ytd-playlist-video-renderer").length);
+		});
+	} while (lastNumVideos < curNumVideos)
+	for (let i=1;i<curNumVideos;i++) {
+		curPlaylistVideos.push(document.querySelectorAll("a.ytd-thumbnail")[i].href.split("?v=")[1].split("&")[0]);
+	}
+	
+	console.log(curPlaylistVideos);
 	
 	var playlistName = document.title.substring(0,document.title.indexOf("YouTube")-3);
 	if (playlistName[0] == "(") {
@@ -75,8 +102,8 @@ chrome.runtime.onMessage.addListener(
 			onPlaylistLoad();
 		} else if (type === "SHUFFLE") {
 			curPlaylistId = value;
-			shuffle = true;
-			startShuffle();
+			console.log(curPlaylistId);
+			playNext();
 		} else if ( type === "DELETE") {
 			chrome.storage.sync.remove(value);
 		}
@@ -85,8 +112,8 @@ chrome.runtime.onMessage.addListener(
 
 document.addEventListener("DOMContentLoaded", async () => {
 	chrome.tabs.query({ currentWindow: true, active: true }, function (tabs) {
-		if (tab.url.includes("youtube.com/playlist") || tab.url.includes("youtube.com/watch")) {
-			const queryParameters = tab.url.split("?")[1];
+		if (tabs[0].url.includes("youtube.com/playlist") || tabs[0].url.includes("youtube.com/watch")) {
+			const queryParameters = tabs[0].url.split("?")[1];
 			const urlParameters = new URLSearchParams(queryParameters);
 			
 			if (urlParameters.get("list") != null) {
@@ -98,9 +125,36 @@ document.addEventListener("DOMContentLoaded", async () => {
 					},
 					function(response) {console.log(response);}
 				);
+			} else if (tabs[0].url.includes("#shuffle=")) {
+				youtubePlayer = document.getElementsByClassName('video-stream')[0];
+				console.log(youtubePlayer);
+				curPlaylistId = tabs[0].url.substring(tabs[0].url.indexOf("#shuffle=")+1);
+				console.log(curPlaylistId);
+				fetchVideos();
+				
+				youtubePlayer.onended = playNext;
 			}
 		}
 	});
 });
 
-//vPlay.onended = function(){console.log(4);}
+window.addEventListener('load', (event) => {
+	if (window.location.href.includes("youtube.com/playlist") || window.location.href.includes("youtube.com/watch")) {
+		const queryParameters = window.location.href.split("?")[1];
+		const urlParameters = new URLSearchParams(queryParameters);
+		
+		if (urlParameters.get("list") != null) {
+			window.location.href.includes("youtube.com/playlist") ? "playlist" : "video",
+			curPlaylistId = urlParameters.get("list");
+			onPlaylistLoad();
+		} else if (window.location.href.includes("#shuffle=")) {
+			youtubePlayer = document.getElementsByClassName('video-stream')[0];
+			console.log(youtubePlayer);
+			curPlaylistId = window.location.href.substring(window.location.href.indexOf("#shuffle=")+9);
+			console.log(curPlaylistId);
+			fetchVideos();
+			
+			youtubePlayer.onended = playNext;
+		}
+	}
+});
