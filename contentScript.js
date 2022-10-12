@@ -15,7 +15,7 @@ const fetchVideos = async () => {
 	curPlaylist = await fetchPlaylist();
 	curPlaylistVideos = curPlaylist.videos;
 	console.log("1");
-	return new Promise((resolve) => {});
+	return new Promise((resolve) => {resolve()});
 }
 
 const playNext = async () => {
@@ -37,7 +37,7 @@ const savePlaylistEventHandler = async () => {
 			window.scrollTo(0,(window.pageYOffset+12000));
 			response(document.querySelectorAll(".style-scope ytd-playlist-video-renderer").length);
 		});
-	} while (lastNumVideos < curNumVideos)
+	} while (lastNumVideos < curNumVideos && document.readyState == "loaded")
 	for (let i=1;i<curNumVideos;i++) {
 		curPlaylistVideos.push(document.querySelectorAll("a.ytd-thumbnail")[i].href.split("?v=")[1].split("&")[0]);
 	}
@@ -71,11 +71,16 @@ const onPlaylistLoad = async () => {
 		saveButton.title = "Click to save playlist";
 		saveButton.width = 24;
 		saveButton.height = 24;
-
-		youtubePlaylistControls = document.getElementById("page-manager").querySelector(".style-scope ytd-playlist-sidebar-primary-info-renderer").querySelector("#menu");
 		
-		youtubePlaylistControls.appendChild(saveButton);
-		saveButton.addEventListener("click", savePlaylistEventHandler);
+		var readyStateCheckInterval = setInterval(function() {
+			youtubePlaylistControls = document.getElementById("page-manager").querySelector(".style-scope ytd-playlist-sidebar-primary-info-renderer").querySelector("#menu");
+			if (youtubePlaylistControls) {
+				console.log("Found playlist controls.")
+				clearInterval(readyStateCheckInterval);
+				youtubePlaylistControls.appendChild(saveButton);
+				saveButton.addEventListener("click", savePlaylistEventHandler);
+			}
+		}, 1000);
 	}
 };
 
@@ -94,59 +99,17 @@ chrome.runtime.onMessage.addListener(
 			playNext();
 		} else if (type === "SHUFFLE") {
 			curPlaylistId = value;
-			youtubePlayer = document.getElementsByClassName('video-stream')[0];
-			fetchVideos();
-			youtubePlayer.onended = playNext;
+			var readyStateCheckInterval = setInterval(function() {
+				youtubePlayer = document.getElementsByClassName('video-stream')[0];
+				if (youtubePlayer) {
+					console.log("Found youtube player.")
+					clearInterval(readyStateCheckInterval);
+					fetchVideos();
+					youtubePlayer.onended = playNext;
+				}
+			}, 1000);
 		} else if (type === "DELETE") {
 			chrome.storage.sync.remove(value);
 		}
 	}
 );
-
-document.addEventListener("DOMContentLoaded", async () => {
-	chrome.tabs.query({ currentWindow: true, active: true }, function (tabs) {
-		if (tabs[0].url.includes("youtube.com/playlist")) {
-			const queryParameters = tabs[0].url.split("?")[1];
-			const urlParameters = new URLSearchParams(queryParameters);
-			
-			if (urlParameters.get("list") != null) {
-				chrome.tabs.sendMessage(
-					tabs[0].id,
-					{
-						type: "PLAYLIST",
-						playlistId: urlParameters.get("list")
-					},
-					function(response) {console.log(response);}
-				);
-			}
-		} else if (tabs[0].url.includes("youtube.com/watch") && tabs[0].url.includes("#shuffle=")) {
-			youtubePlayer = document.getElementsByClassName('video-stream')[0];
-			console.log(youtubePlayer);
-			curPlaylistId = tabs[0].url.substring(tabs[0].url.indexOf("#shuffle=")+9);
-			console.log(curPlaylistId);
-			fetchVideos();
-			
-			youtubePlayer.onended = playNext;
-		}
-	});
-});
-
-window.addEventListener('load', (event) => {
-	if (window.location.href.includes("youtube.com/playlist")) {
-		const queryParameters = window.location.href.split("?")[1];
-		const urlParameters = new URLSearchParams(queryParameters);
-		
-		if (urlParameters.get("list") != null) {
-			curPlaylistId = urlParameters.get("list");
-			onPlaylistLoad();
-		}
-	} else if (window.location.href.includes("youtube.com/watch") && window.location.href.includes("#shuffle=")) {
-		youtubePlayer = document.getElementsByClassName('video-stream')[0];
-		console.log(youtubePlayer);
-		curPlaylistId = window.location.href.substring(window.location.href.indexOf("#shuffle=")+9);
-		console.log(curPlaylistId);
-		fetchVideos();
-		
-		youtubePlayer.onended = playNext;
-	}
-});
