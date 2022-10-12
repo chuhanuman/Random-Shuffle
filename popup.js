@@ -46,7 +46,7 @@ const onShuffle = async e => {
 	const activeTab = await getActiveTabURL();
 
 	chrome.tabs.sendMessage(activeTab.id, {
-		type: "SHUFFLE",
+		type: "STARTSHUFFLE",
 		value: playlistId,
 	});
 };

@@ -2,7 +2,6 @@ let youtubePlaylistControls, youtubePlayer;
 let curPlaylist;
 let curPlaylistId = "";
 let curPlaylistVideos;
-let curPageType = "";
 
 const fetchPlaylist = () => {
 	return new Promise((resolve) => {
@@ -73,14 +72,8 @@ const onPlaylistLoad = async () => {
 		saveButton.width = 24;
 		saveButton.height = 24;
 
-		if (curPageType == "video") {
-			youtubePlaylistControls = document.getElementById("columns").querySelector(".style-scope ytd-playlist-panel-renderer").querySelector("#overflow-menu");
-		} else {
-			youtubePlaylistControls = document.getElementById("page-manager").querySelector(".style-scope ytd-playlist-sidebar-primary-info-renderer").querySelector("#menu");
-		}
-		youtubePlayer = document.getElementsByClassName('video-stream')[0];
+		youtubePlaylistControls = document.getElementById("page-manager").querySelector(".style-scope ytd-playlist-sidebar-primary-info-renderer").querySelector("#menu");
 		
-		console.log(youtubePlayer);
 		youtubePlaylistControls.appendChild(saveButton);
 		saveButton.addEventListener("click", savePlaylistEventHandler);
 	}
@@ -92,19 +85,19 @@ chrome.runtime.onMessage.addListener(
 		const { type, value } = request;
 		sendResponse(type);
 		
-		if (type === "VIDEO") {
+		if (type === "PLAYLIST") {
 			curPlaylistId = value;
-			curPageType = "video";
 			onPlaylistLoad();
-		} else if (type === "PLAYLIST") {
-			curPlaylistId = value;
-			curPageType = "playlist";
-			onPlaylistLoad();
-		} else if (type === "SHUFFLE") {
+		} else if (type === "STARTSHUFFLE") {
 			curPlaylistId = value;
 			console.log(curPlaylistId);
 			playNext();
-		} else if ( type === "DELETE") {
+		} else if (type === "SHUFFLE") {
+			curPlaylistId = value;
+			youtubePlayer = document.getElementsByClassName('video-stream')[0];
+			fetchVideos();
+			youtubePlayer.onended = playNext;
+		} else if (type === "DELETE") {
 			chrome.storage.sync.remove(value);
 		}
 	}
@@ -112,49 +105,48 @@ chrome.runtime.onMessage.addListener(
 
 document.addEventListener("DOMContentLoaded", async () => {
 	chrome.tabs.query({ currentWindow: true, active: true }, function (tabs) {
-		if (tabs[0].url.includes("youtube.com/playlist") || tabs[0].url.includes("youtube.com/watch")) {
+		if (tabs[0].url.includes("youtube.com/playlist")) {
 			const queryParameters = tabs[0].url.split("?")[1];
 			const urlParameters = new URLSearchParams(queryParameters);
 			
 			if (urlParameters.get("list") != null) {
 				chrome.tabs.sendMessage(
-					tabId,
+					tabs[0].id,
 					{
-						type: tab.url.includes("youtube.com/playlist") ? "PLAYLIST" : "VIDEO",
+						type: "PLAYLIST",
 						playlistId: urlParameters.get("list")
 					},
 					function(response) {console.log(response);}
 				);
-			} else if (tabs[0].url.includes("#shuffle=")) {
-				youtubePlayer = document.getElementsByClassName('video-stream')[0];
-				console.log(youtubePlayer);
-				curPlaylistId = tabs[0].url.substring(tabs[0].url.indexOf("#shuffle=")+1);
-				console.log(curPlaylistId);
-				fetchVideos();
-				
-				youtubePlayer.onended = playNext;
 			}
-		}
-	});
-});
-
-window.addEventListener('load', (event) => {
-	if (window.location.href.includes("youtube.com/playlist") || window.location.href.includes("youtube.com/watch")) {
-		const queryParameters = window.location.href.split("?")[1];
-		const urlParameters = new URLSearchParams(queryParameters);
-		
-		if (urlParameters.get("list") != null) {
-			window.location.href.includes("youtube.com/playlist") ? "playlist" : "video",
-			curPlaylistId = urlParameters.get("list");
-			onPlaylistLoad();
-		} else if (window.location.href.includes("#shuffle=")) {
+		} else if (tabs[0].url.includes("youtube.com/watch") && tabs[0].url.includes("#shuffle=")) {
 			youtubePlayer = document.getElementsByClassName('video-stream')[0];
 			console.log(youtubePlayer);
-			curPlaylistId = window.location.href.substring(window.location.href.indexOf("#shuffle=")+9);
+			curPlaylistId = tabs[0].url.substring(tabs[0].url.indexOf("#shuffle=")+9);
 			console.log(curPlaylistId);
 			fetchVideos();
 			
 			youtubePlayer.onended = playNext;
 		}
+	});
+});
+
+window.addEventListener('load', (event) => {
+	if (window.location.href.includes("youtube.com/playlist")) {
+		const queryParameters = window.location.href.split("?")[1];
+		const urlParameters = new URLSearchParams(queryParameters);
+		
+		if (urlParameters.get("list") != null) {
+			curPlaylistId = urlParameters.get("list");
+			onPlaylistLoad();
+		}
+	} else if (window.location.href.includes("youtube.com/watch") && window.location.href.includes("#shuffle=")) {
+		youtubePlayer = document.getElementsByClassName('video-stream')[0];
+		console.log(youtubePlayer);
+		curPlaylistId = window.location.href.substring(window.location.href.indexOf("#shuffle=")+9);
+		console.log(curPlaylistId);
+		fetchVideos();
+		
+		youtubePlayer.onended = playNext;
 	}
 });
