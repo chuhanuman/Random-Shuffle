@@ -1,68 +1,69 @@
 import { getActiveTabURL } from "./utils.js";
 
-const addNewBookmark = (bookmarks, bookmark) => {
-	const bookmarkTitleElement = document.createElement("div");
+const addNewPlaylist = (playlists, playlist) => {
+	console.log("HERE");
+	console.log(playlist);
+	const playlistTitleElement = document.createElement("div");
 	const controlsElement = document.createElement("div");
-	const newBookmarkElement = document.createElement("div");
+	const newPlaylistElement = document.createElement("div");
 
-	bookmarkTitleElement.textContent = bookmark.desc;
-	bookmarkTitleElement.className = "bookmark-title";
-	controlsElement.className = "bookmark-controls";
+	playlistTitleElement.textContent = playlist.name;
+	playlistTitleElement.className = "playlist-title";
+	controlsElement.className = "playlist-controls";
 
-	setBookmarkAttributes("play", onPlay, controlsElement);
-	setBookmarkAttributes("delete", onDelete, controlsElement);
+	setPlaylistAttributes("shuffle", onShuffle, controlsElement);
+	setPlaylistAttributes("delete", onDelete, controlsElement);
 
-	newBookmarkElement.id = "bookmark-" + bookmark.time;
-	newBookmarkElement.className = "bookmark";
-	newBookmarkElement.setAttribute("timestamp", bookmark.time);
+	newPlaylistElement.id = "playlist-" + playlist.id;
+	newPlaylistElement.className = "playlist";
+	newPlaylistElement.setAttribute("playlistId", playlist.id);
 
-	newBookmarkElement.appendChild(bookmarkTitleElement);
-	newBookmarkElement.appendChild(controlsElement);
-	bookmarks.appendChild(newBookmarkElement);
+	newPlaylistElement.appendChild(playlistTitleElement);
+	newPlaylistElement.appendChild(controlsElement);
+	playlists.appendChild(newPlaylistElement);
 };
 
-const viewBookmarks = (currentBookmarks=[]) => {
-	const bookmarksElement = document.getElementById("bookmarks");
-	bookmarksElement.innerHTML = "";
-
-	if (currentBookmarks.length > 0) {
-		for (let i = 0; i < currentBookmarks.length; i++) {
-			const bookmark = currentBookmarks[i];
-			addNewBookmark(bookmarksElement, bookmark);
+const viewPlaylists = (playlists = []) => {
+	const playlistsElement = document.getElementById("playlists");
+	playlistsElement.innerHTML = "";
+	
+	console.log(playlists);
+	if (playlists.length > 0) {
+		for (let i = 0; i < playlists.length; i++) {
+			const playlist = playlists[i];
+			addNewPlaylist(playlistsElement, playlist);
 		}
 	} else {
-		bookmarksElement.innerHTML = '<i class="row">No bookmarks to show</i>';
+		playlistsElement.innerHTML = '<i class="row">You have no playlists.</i>';
 	}
 
 	return;
 };
 
-const onPlay = async e => {
-	const bookmarkTime = e.target.parentNode.parentNode.getAttribute("timestamp");
+const onShuffle = async e => {
+	const playlistId = e.target.parentNode.parentNode.getAttribute("playlistId");
 	const activeTab = await getActiveTabURL();
 
 	chrome.tabs.sendMessage(activeTab.id, {
-		type: "PLAY",
-		value: bookmarkTime,
+		type: "SHUFFLE",
+		value: playlistId,
 	});
 };
 
 const onDelete = async e => {
 	const activeTab = await getActiveTabURL();
-	const bookmarkTime = e.target.parentNode.parentNode.getAttribute("timestamp");
-	const bookmarkElementToDelete = document.getElementById(
-		"bookmark-" + bookmarkTime
-	);
+	const playlistId = e.target.parentNode.parentNode.getAttribute("playlistId");
+	const playlistElementToDelete = document.getElementById("playlist-" + playlistId);
 
-	bookmarkElementToDelete.parentNode.removeChild(bookmarkElementToDelete);
+	playlistElementToDelete.parentNode.removeChild(playlistElementToDelete);
 
 	chrome.tabs.sendMessage(activeTab.id, {
 		type: "DELETE",
-		value: bookmarkTime,
-	}, viewBookmarks);
+		value: playlistId,
+	}, window.location.reload);
 };
 
-const setBookmarkAttributes =    (src, eventListener, controlParentElement) => {
+const setPlaylistAttributes = (src, eventListener, controlParentElement) => {
 	const controlElement = document.createElement("img");
 
 	controlElement.src = "assets/" + src + ".png";
@@ -73,21 +74,30 @@ const setBookmarkAttributes =    (src, eventListener, controlParentElement) => {
 
 document.addEventListener("DOMContentLoaded", async () => {
 	const activeTab = await getActiveTabURL();
-	const queryParameters = activeTab.url.split("?")[1];
-	const urlParameters = new URLSearchParams(queryParameters);
 
-	const currentVideo = urlParameters.get("v");
-
-	if (activeTab.url.includes("youtube.com/watch") && currentVideo) {
-		chrome.storage.sync.get([currentVideo], (data) => {
-			const currentVideoBookmarks = data[currentVideo] ? JSON.parse(data[currentVideo]) : [];
-
-			viewBookmarks(currentVideoBookmarks);
+	if (activeTab.url.includes("youtube.com")) {
+		var playlistIds = await new Promise((resolve) => {
+			chrome.storage.sync.get(null, (playlistIds) => {
+				resolve(Object.keys(playlistIds));
+			});
 		});
+		
+		var playlists = [], curPlaylist;
+		for (var key in playlistIds) {
+			curPlaylist = await new Promise((resolve) => {
+				chrome.storage.sync.get([playlistIds.at(key)], (obj) => {
+					console.log(obj[playlistIds.at(key)]);
+					resolve(JSON.parse(obj[playlistIds.at(key)]));
+				});
+			});
+			playlists.push(curPlaylist);
+		}
+		
+		viewPlaylists(playlists);
 	} else {
 		const container = document.getElementsByClassName("container")[0];
 
-		container.innerHTML = '<div class="title">This is not a youtube video page.</div>';
+		container.innerHTML = '<div class="title">This is not a youtube page.</div>';
 	}
 });
 

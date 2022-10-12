@@ -21,12 +21,12 @@
   border-color: #66afe9;
 }
 
-.bookmarks {
+.playlists {
   margin: 5px 5px;
   padding: 3px;
 }
 
-.bookmark {
+.playlist {
   display: flex;
   border-bottom-color: #00254d;
   border-bottom-width: 1px;
@@ -37,17 +37,17 @@
   margin-bottom: 7px;
 }
 
-.bookmark-title {
+.playlist-title {
   padding-left: 2px;
 }
 
-.bookmark-controls img {
+.playlist-controls img {
   margin: 0 4px;
   width: 18px;
   height: 18px;
   cursor: pointer;
 }
-.bookmark-controls {
+.playlist-controls {
   flex: auto;
   text-align: right;
 }

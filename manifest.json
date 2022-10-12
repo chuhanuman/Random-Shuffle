@@ -2,7 +2,7 @@
     "name": "Youtube Random Shuffle",
     "version": "0.1",
     "description": "An actually random shuffle for large playlists, and without the lag. Based on https://github.com/raman-at-pieces/youtube-bookmarker-finished-code",
-    "permissions": ["storage", "scripting", "tabs"],
+    "permissions": ["storage", "scripting", "activeTab", "tabs"],
     "host_permissions": ["https://*.youtube.com/*"],
     "background": {
         "service_worker": "background.js"

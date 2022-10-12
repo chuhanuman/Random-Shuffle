@@ -8,7 +8,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 				tabId,
 				{
 					type: tab.url.includes("youtube.com/playlist") ? "PLAYLIST" : "VIDEO",
-					playlistId: urlParameters.get("list")
+					value: urlParameters.get("list")
 				},
 				function(response) {console.log(response);}
 			);
