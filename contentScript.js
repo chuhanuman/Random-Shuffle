@@ -38,8 +38,10 @@ const savePlaylistEventHandler = async () => {
 			response(document.querySelectorAll(".style-scope ytd-playlist-video-renderer").length);
 		});
 	} while (lastNumVideos < curNumVideos && document.readyState == "loaded")
-	for (let i=1;i<curNumVideos;i++) {
-		curPlaylistVideos.push(document.querySelectorAll("a.ytd-thumbnail")[i].href.split("?v=")[1].split("&")[0]);
+	for (let i=0;i<curNumVideos;i++) {
+		if (document.querySelectorAll("a.ytd-thumbnail")[i].href.indexOf("&list=") != -1) {
+			curPlaylistVideos.push(document.querySelectorAll("a.ytd-thumbnail")[i].href.split("?v=")[1].split("&")[0]);
+		}
 	}
 	
 	console.log(curPlaylistVideos);
@@ -73,7 +75,12 @@ const onPlaylistLoad = async () => {
 		saveButton.height = 24;
 		
 		var readyStateCheckInterval = setInterval(function() {
-			youtubePlaylistControls = document.getElementById("page-manager").querySelector(".style-scope ytd-playlist-sidebar-primary-info-renderer").querySelector("#menu");
+			let youtubePlaylistControls;
+			if (curPlaylistId == "WL") {
+				youtubePlaylistControls = document.getElementById("page-manager").querySelector(".style-scope ytd-playlist-sidebar-primary-info-renderer").querySelector("#menu");
+			} else {
+				youtubePlaylistControls = document.getElementsByClassName("metadata-buttons-wrapper style-scope ytd-playlist-header-renderer")[0];
+			}
 			if (youtubePlaylistControls) {
 				console.log("Found playlist controls.")
 				clearInterval(readyStateCheckInterval);
