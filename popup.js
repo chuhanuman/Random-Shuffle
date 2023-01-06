@@ -1,7 +1,6 @@
 import { getActiveTabURL } from "./utils.js";
 let allPlaylists;
 
-//TODO: view playlist
 const addNewPlaylist = (playlists, playlist, index) => {
 	console.log(playlist);
 	const playlistTitleElement = document.createElement("div");
@@ -30,32 +29,32 @@ const addNewVideo = (videos,video) => {
 	const videoTitleElement = document.createElement("div");
 	const newVideoElement = document.createElement("div");
 
-	playlistTitleElement.textContent = video;
-	playlistTitleElement.className = "video-title";
+	videoTitleElement.textContent = video.name;
+	videoTitleElement.className = "video-title";
 
-	newPlaylistElement.id = "video-" + video;
-	newPlaylistElement.className = "video";
-	newPlaylistElement.setAttribute("videoId", video);
+	newVideoElement.id = "video-" + video.id;
+	newVideoElement.className = "video";
+	newVideoElement.setAttribute("videoId", video.id);
 
-	newPlaylistElement.appendChild(playlistTitleElement);
-	videos.appendChild(newPlaylistElement);
+	newVideoElement.appendChild(videoTitleElement);
+	videos.appendChild(newVideoElement);
 }
 
 const viewPlaylist = async e => {
-	console.log(e.target.parentNode.parentNode.parentNode);
-	var index = e.target.parentNode.parentNode.parentNode.getAttribute("playlistIndex");
-	document.getElementsByClassName("title")[0].innerHTML = e.target.parentNode.parentNode.textContent;
+	console.log(e.target);
+	var index = e.target.parentNode.getAttribute("playlistindex");
+	
+	var curVideos = allPlaylists[index].videos;
+	console.log(curVideos);
+	
+	document.getElementsByClassName("title")[0].innerHTML = e.target.textContent;
 	const videosElement = document.getElementById("items");
 	videosElement.innerHTML = "";
 	
-	console.log(allPlaylists);
-	console.log(index);
-	videos = allPlaylists[index].videos;
-	console.log(videos);
-	if (videos.length > 0) {
-		for (let i = 0; i < videos.length; i++) {
-			const video = videos[i];
-			addNewPlaylist(videosElement, video);
+	if (curVideos.length > 0) {
+		for (let i = 0; i < curVideos.length; i++) {
+			const video = curVideos[i];
+			addNewVideo(videosElement, video);
 		}
 	} else {
 		videosElement.innerHTML = '<i class="row">This playlist has no videos.</i>';
@@ -81,9 +80,8 @@ const viewPlaylists = (playlists = []) => {
 };
 
 const onShuffle = async e => {
-	const playlistId = e.target.parentNode.parentNode.getAttribute("playlistId");
+	const playlistId = e.target.parentNode.parentNode.getAttribute("playlistid");
 	const activeTab = await getActiveTabURL();
-
 	chrome.tabs.sendMessage(activeTab.id, {
 		type: "STARTSHUFFLE",
 		value: playlistId,
@@ -92,7 +90,7 @@ const onShuffle = async e => {
 
 const onDelete = async e => {
 	const activeTab = await getActiveTabURL();
-	const playlistId = e.target.parentNode.parentNode.getAttribute("playlistId");
+	const playlistId = e.target.parentNode.parentNode.getAttribute("playlistid");
 	const playlistElementToDelete = document.getElementById("playlist-" + playlistId);
 
 	playlistElementToDelete.parentNode.removeChild(playlistElementToDelete);

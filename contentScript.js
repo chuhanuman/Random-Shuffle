@@ -24,7 +24,7 @@ const playNext = async () => {
 		await fetchVideos();
 	}
 	console.log("2");
-	window.location.href = "https://youtube.com/watch?v=" + curPlaylistVideos[Math.floor(Math.random()*curPlaylistVideos.length)] + "#shuffle=" + curPlaylistId;
+	window.location.href = "https://youtube.com/watch?v=" + curPlaylistVideos[Math.floor(Math.random()*curPlaylistVideos.length)].id + "#shuffle=" + curPlaylistId;
 }
 
 const savePlaylistEventHandler = async () => {
@@ -38,9 +38,16 @@ const savePlaylistEventHandler = async () => {
 			response(document.querySelectorAll(".style-scope ytd-playlist-video-renderer").length);
 		});
 	} while (lastNumVideos < curNumVideos && document.readyState == "loaded")
-	for (let i=0;i<curNumVideos;i++) {
-		if (document.querySelectorAll("a.ytd-thumbnail")[i].href.indexOf("&list=") != -1) {
-			curPlaylistVideos.push(document.querySelectorAll("a.ytd-thumbnail")[i].href.split("?v=")[1].split("&")[0]);
+	
+	let thumbnail;
+	for (let i=0;i<document.querySelectorAll("a.ytd-thumbnail").length;i++) {
+		thumbnail = document.querySelectorAll("a.ytd-thumbnail")[i];
+		if (thumbnail.href.indexOf("&list="+curPlaylistId) != -1) {
+			let curVideo = {
+				id: thumbnail.href.split("?v=")[1].split("&")[0],
+				name: thumbnail.parentElement.parentElement.parentElement.querySelectorAll("#video-title")[0].title
+			};
+			curPlaylistVideos.push(curVideo);
 		}
 	}
 	
