@@ -115,7 +115,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 	if (activeTab.url.includes("youtube.com")) {
 		var playlistIds = await new Promise((resolve) => {
-			chrome.storage.sync.get(null, (playlistIds) => {
+			chrome.storage.local.get(null, (playlistIds) => {
 				resolve(Object.keys(playlistIds));
 			});
 		});
@@ -124,7 +124,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 		allPlaylists = [];
 		for (var key in playlistIds) {
 			curPlaylist = await new Promise((resolve) => {
-				chrome.storage.sync.get([playlistIds.at(key)], (obj) => {
+				chrome.storage.local.get([playlistIds.at(key)], (obj) => {
 					console.log(obj[playlistIds.at(key)]);
 					resolve(JSON.parse(obj[playlistIds.at(key)]));
 				});

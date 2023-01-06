@@ -5,7 +5,7 @@ let curPlaylistVideos;
 
 const fetchPlaylist = () => {
 	return new Promise((resolve) => {
-		chrome.storage.sync.get([curPlaylistId], (obj) => {
+		chrome.storage.local.get([curPlaylistId], (obj) => {
 			resolve(obj[curPlaylistId] ? JSON.parse(obj[curPlaylistId]) : []);
 		});
 	});
@@ -64,7 +64,7 @@ const savePlaylistEventHandler = async () => {
 		videos: curPlaylistVideos
 	};
 
-	chrome.storage.sync.set({[curPlaylistId]: JSON.stringify(newPlaylist)}, () => {
+	chrome.storage.local.set({[curPlaylistId]: JSON.stringify(newPlaylist)}, () => {
 		console.log(newPlaylist);
 	});
 };
@@ -126,7 +126,7 @@ chrome.runtime.onMessage.addListener(
 				}
 			}, 1000);
 		} else if (type === "DELETE") {
-			chrome.storage.sync.remove(value);
+			chrome.storage.local.remove(value);
 		}
 	}
 );
